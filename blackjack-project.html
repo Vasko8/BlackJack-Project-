@@ -1,0 +1,409 @@
+LUCAS, ADAM, LUCA 
+BLACKJACK 
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Blackjack</title>
+  <style>
+    body {
+      background-color: #1a6b3a;
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+
+    h1 { color: gold; font-size: 2em; }
+
+    /* on va améliorer le style des cartes... */
+    .carte {
+      display: inline-block;
+      background: white;
+      color: black;
+      width: 60px;
+      height: 90px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin: 5px;
+      font-size: 1.2em;
+      font-weight: bold;
+      line-height: 90px;
+      vertical-align: middle;
+    }
+
+    .carte.rouge { color: red; }
+
+    /* carte cachée (dos) - on va les stylisé beaucoup mieux par la suite... */
+    .carte.cachee {
+      background: navy;
+      color: navy;
+    }
+
+    #zone-croupier, #zone-joueur {
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 15px;
+      margin: 15px auto;
+      width: 500px;
+    }
+
+    #zone-croupier h2, #zone-joueur h2 {
+      color: gold;
+      margin-top: 0;
+    }
+
+    #score-joueur, #score-croupier {
+      margin-top: 8px;
+      font-size: 1em;
+      color: #ccffcc;
+    }
+
+    #message {
+      font-size: 1.4em;
+      color: gold;
+      font-weight: bold;
+      margin: 15px 0;
+      min-height: 40px;
+    }
+
+    /* Boutons mettre un meilleur style de bouton... */
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #btn-tirer   { background: #27ae60; color: white; }
+    #btn-rester  { background: #c0392b; color: white; }
+    #btn-nouvelle { background: gold; color: black; }
+
+    button:disabled { opacity: 0.4; cursor: default; }
+  </style>
+</head>
+<body>
+
+  <h1> Blackjack </h1>
+
+  <div id="zone-croupier">
+    <h2>Croupier</h2>
+    <div id="cartes-croupier"></div>
+    <div id="score-croupier"></div>
+  </div>
+
+  <div id="zone-joueur">
+    <h2>Joueur</h2>
+    <div id="cartes-joueur"></div>
+    <div id="score-joueur"></div>
+  </div>
+
+  <div id="message">Clique sur "Nouvelle partie" pour commencer</div>
+
+  <div>
+    <button id="btn-tirer"    onclick="tirer()"          disabled>Tirer une carte</button>
+    <button id="btn-rester"   onclick="rester()"         disabled>Rester</button>
+    <button id="btn-nouvelle" onclick="nouvellePartie()">Nouvelle partie</button>
+  </div>
+
+  <!-- on ajoutera un bouton Doubler -->
+  <!-- et on ajoutera un système de mise -->
+
+<script>
+
+  // Les 4 couleurs du jeu
+  const COULEURS = [
+    { symbole: "♠", rouge: false },
+    { symbole: "♥", rouge: true  },
+    { symbole: "♦", rouge: true  },
+    { symbole: "♣", rouge: false }
+  ];
+
+  // Les valeurs des cartes
+  const VALEURS = ["2","3","4","5","6","7","8","9","10","V","D","R","A"];
+
+  // Retourne la valeur en points d'une carte
+  function pointsCarte(valeur) {
+    if (valeur === "A") return 11;
+    if (valeur === "V" || valeur === "D" || valeur === "R") return 10;
+    return parseInt(valeur);
+  }
+
+function creerJeu() {
+    let jeu = [];
+
+    let nombreDeCouleurs = COULEURS.length;
+    let nombreDeValeurs = VALEURS.length;
+
+    let indiceCouleur = 0;
+    while (indiceCouleur < nombreDeCouleurs) {
+
+        let indiceValeur = 0;
+        while (indiceValeur < nombreDeValeurs) {
+
+            let nouvelleCarte = {
+                valeur: VALEURS[indiceValeur],
+                couleur: COULEURS[indiceCouleur]
+            };
+
+            jeu.push(nouvelleCarte);
+
+            indiceValeur = indiceValeur + 1;
+        }
+
+        indiceCouleur = indiceCouleur + 1;
+    }
+
+// Mélange aléatoire (algorithme de Fisher-Yates)
+// positionActuelle commence à la dernière carte du jeu
+
+// TANT QUE positionActuelle est supérieur à 0 :
+
+    // positionAleatoire = on tire un nombre au hasard entre 0 et positionActuelle
+
+    // on met de côté la carte qui est à positionActuelle (carteTemporaire)
+    // on met à positionActuelle la carte qui est à positionAleatoire
+    // on met à positionAleatoire la carte qu'on avait mis de côté (carteTemporaire)
+
+    // positionActuelle = positionActuelle - 1
+
+
+
+    let positionActuelle = jeu.length - 1;
+
+    while (positionActuelle > 0) {
+
+        let positionAleatoire = Math.floor(Math.random() * (positionActuelle + 1));
+
+        let carteTemporaire = jeu[positionActuelle];
+        jeu[positionActuelle] = jeu[positionAleatoire];
+        jeu[positionAleatoire] = carteTemporaire;
+
+        positionActuelle = positionActuelle - 1;
+    }
+
+    return jeu;
+}
+
+  // Calcule le score d'une main
+  // Si on a un as et qu'on dépasse 21, l'as vaut 1 au lieu de 11
+
+// on crée une variable total à 0
+// on crée une variable nbAs à 0
+
+// POUR chaque carte dans la main :
+    // on ajoute les points de la carte à total
+    // SI la carte est un As : on ajoute 1 à nbAs
+
+// TANT QUE total est supérieur à 21 ET qu'il reste des As :
+    // on enlève 10 à total
+    // on enlève 1 à nbAs
+
+// on retourne total
+
+
+function calculerScore(main) {
+    let total = 0;
+    let nombreAs = 0;
+
+    let indice = 0;
+    while (indice < main.length) {
+        total = total + pointsCarte(main[indice].valeur);
+
+        if (main[indice].valeur === "A") {
+            nombreAs = nombreAs + 1;
+        }
+
+        indice = indice + 1;
+    }
+
+    while (total > 21 && nombreAs > 0) {
+        total = total - 10;
+        nombreAs = nombreAs - 1;
+    }
+
+    return total;
+}
+
+  // Affiche les cartes dans une div
+  // cacheDeuxieme : si true, la 2ème carte du croupier est cachée
+
+// on récupère la div dans la page avec son id
+// on vide la div
+
+// POUR chaque carte dans la main :
+    // on crée une nouvelle div
+    // on lui ajoute la classe "carte"
+
+    // SI cacheDeuxieme est vrai ET que c'est la 2ème carte :
+        // on ajoute la classe "cachee"
+        // on affiche "?"
+    // SINON :
+        // SI la couleur est rouge : on ajoute la classe "rouge"
+        // on affiche la valeur et le symbole de la carte
+
+    // on ajoute la div dans la zone
+
+
+function afficherCartes(main, idDiv, cacheDeuxieme) {
+    let zone = document.getElementById(idDiv);
+    zone.innerHTML = "";
+
+    let indice = 0;
+    while (indice < main.length) {
+        let nouvelleCarte = document.createElement("div");
+        nouvelleCarte.classList.add("carte");
+
+        if (cacheDeuxieme && indice === 1) {
+            nouvelleCarte.classList.add("cachee");
+            nouvelleCarte.textContent = "?";
+        } else {
+            if (main[indice].couleur.rouge) {
+                nouvelleCarte.classList.add("rouge");
+            }
+            nouvelleCarte.textContent = main[indice].valeur + main[indice].couleur.symbole;
+        }
+
+        zone.appendChild(nouvelleCarte);
+        indice = indice + 1;
+    }
+}
+
+  // Variables du jeu
+
+// on crée le jeu, on vide la main du joueur et du croupier
+// on vide le message affiché
+
+// on distribue 2 cartes au joueur et 2 cartes au croupier en alternant
+
+// on affiche les cartes du joueur (rien de caché)
+// on affiche les cartes du croupier (2ème carte cachée)
+
+// on affiche le score du joueur
+// on affiche seulement les points de la 1ère carte du croupier
+
+// on active les boutons tirer et rester
+
+// SI le joueur a 21 dès le départ :
+    // on affiche "BLACKJACK"
+    // on appelle la fonction rester()
+
+  let jeu = [];
+  let mainJoueur   = [];
+  let mainCroupier = [];
+
+function nouvellePartie() {
+    jeu = creerJeu();
+    mainJoueur = [];
+    mainCroupier = [];
+
+    document.getElementById("message").textContent = "";
+
+    mainJoueur.push(jeu.pop());
+    mainCroupier.push(jeu.pop());
+    mainJoueur.push(jeu.pop());
+    mainCroupier.push(jeu.pop());
+
+    afficherCartes(mainJoueur, "cartes-joueur", false);
+    afficherCartes(mainCroupier, "cartes-croupier", true);
+
+    document.getElementById("score-joueur").textContent = "Score : " + calculerScore(mainJoueur);
+    document.getElementById("score-croupier").textContent = "Score visible : " + pointsCarte(mainCroupier[0].valeur);
+
+    document.getElementById("btn-tirer").disabled = false;
+    document.getElementById("btn-rester").disabled = false;
+
+    if (calculerScore(mainJoueur) === 21) {
+        document.getElementById("message").textContent = "BLACKJACK ! On attend le croupier...";
+        rester();
+    }
+}
+
+  // Le joueur tire une carte
+
+// on ajoute une carte à la main du joueur
+// on affiche les cartes du joueur
+// on affiche le nouveau score du joueur
+
+// SI le score du joueur dépasse 21 :
+    // on révèle toutes les cartes du croupier
+    // on affiche le score du croupier
+    // on affiche "vous avez brûlé"
+    // on désactive les boutons tirer et rester
+
+
+function tirer() {
+    mainJoueur.push(jeu.pop());
+
+    afficherCartes(mainJoueur, "cartes-joueur", false);
+    document.getElementById("score-joueur").textContent = "Score : " + calculerScore(mainJoueur);
+
+    let scoreJoueur = calculerScore(mainJoueur);
+
+    if (scoreJoueur > 21) {
+        afficherCartes(mainCroupier, "cartes-croupier", false);
+        document.getElementById("score-croupier").textContent = "Score : " + calculerScore(mainCroupier);
+        document.getElementById("message").textContent = "Vous avez brûlé (" + scoreJoueur + ") ! Perdu.";
+        document.getElementById("btn-tirer").disabled = true;
+        document.getElementById("btn-rester").disabled = true;
+    }
+}
+
+  // Le joueur reste - le croupier joue
+
+// on désactive les boutons tirer et rester
+// on révèle la carte cachée du croupier
+
+// TANT QUE le score du croupier est inférieur à 17 :
+    // on lui tire une carte
+    // on affiche ses cartes
+
+// on affiche le score final du croupier
+
+// on calcule le score du joueur et du croupier
+// SI le croupier a brûlé : le joueur gagne
+// SINON SI le joueur a plus que le croupier : le joueur gagne
+// SINON SI le croupier a plus que le joueur : le croupier gagne
+// SINON : égalité
+
+// on affiche le message du résultat
+
+
+function rester() {
+    document.getElementById("btn-tirer").disabled = true;
+    document.getElementById("btn-rester").disabled = true;
+
+    afficherCartes(mainCroupier, "cartes-croupier", false);
+
+    while (calculerScore(mainCroupier) < 17) {
+        mainCroupier.push(jeu.pop());
+        afficherCartes(mainCroupier, "cartes-croupier", false);
+    }
+
+    document.getElementById("score-croupier").textContent = "Score : " + calculerScore(mainCroupier);
+
+    let scoreJoueur = calculerScore(mainJoueur);
+    let scoreCroupier = calculerScore(mainCroupier);
+    let message = "";
+
+    if (scoreCroupier > 21) {
+        message = "Le croupier brûle (" + scoreCroupier + ") ! Vous gagnez !";
+    } else if (scoreJoueur > scoreCroupier) {
+        message = "Vous gagnez ! (" + scoreJoueur + " contre " + scoreCroupier + ")";
+    } else if (scoreJoueur < scoreCroupier) {
+        message = "Le croupier gagne. (" + scoreCroupier + " contre " + scoreJoueur + ")";
+    } else {
+        message = "Égalité ! (" + scoreJoueur + ")";
+    }
+
+    document.getElementById("message").textContent = message;
+}
+
+</script>
+
+</body>
+</html>
