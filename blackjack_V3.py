@@ -150,26 +150,42 @@ def commencer():
 
 
 def tirer():
+    """
+    Le joueur pioche une carte supplémentaire ("Hit").
+
+    - Bloqué si la partie est déjà terminée.
+    - Ajoute une carte à la main du joueur.
+    - Vérifie si le joueur dépasse 21 et donc annonce la fin de partie automatiquement.
+    
+    """
     global partie_finie
 
     if partie_finie:
-        return
+        return # question de Sécurité on ne peut pas jouer si la partie n'est pas finie  
 
-    main_joueur.append(paquet.pop())
+    main_joueur.append(paquet.pop()) #le joueur pioche une carte et l'ajoute dans la main du joeur 
 
     score = calcul_score(main_joueur)
     label_joueur.config(text="Score joueur : " + str(score))
 
     if score > 21:
         label_message.config(text="Perdu (dépassé 21)")
-        fin()
+        fin() # on arrete tout si il y a défaite 
 
 
 def rester():
+    """
+    Le joeur décide de ne plus piocher ce qu'on appelle le "Stand" 
+
+    - Bloqué si la partie est déja terminée
+    - La banque joue automatiquement et elle tire des cartes jusqu'à ateindre au moins 17 points ( règles du casino ) 
+    - puis déclenche ensuiàte le calcul du résultat final 
+    
+    """
     global partie_finie
 
     if partie_finie:
-        return
+        return # sécurité on ne pas pas commencé si c'est pas finis 
 
     while calcul_score(main_banque) < 17:
         main_banque.append(paquet.pop())
@@ -178,6 +194,18 @@ def rester():
 
 
 def fin():
+    """
+    on détermine le résultat de la partie et  on met à jour le solde.
+
+    les cas à gérés :
+    - Joueur > 21 → Perdu 
+    - Banque > 21 ou score joueur > score banque → Gagné
+    - Score banque > score joueur → Banque gagne
+    - Égalité → Aucun échange d'argent
+
+    Et on met à jour l'affichage du solde et le message de résultat.
+    
+    """
     global solde, partie_finie
 
     if partie_finie:
